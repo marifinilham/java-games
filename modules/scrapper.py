@@ -8,6 +8,7 @@ class Scrap:
 		self.cli()
 
 	def cli(self):
+		print(self.config)
 		ps1 = f'[java-games-{version}]'
 		if idgame := self.config['id']:
 			ps1 += f'[{idgame}]'
@@ -26,6 +27,9 @@ class Scrap:
 		elif key == 'set':
 			self.setting(param)
 
+		elif key == 'del':
+			self.delete(param)
+
 		elif key == 'exit':
 			return
 
@@ -38,6 +42,8 @@ class Dedomil(Scrap):
 		self.config = {
 			'id': 0
 		}
+		self.old_config = self.config.copy()
+
 		super().__init__()
 
 	def search(self, args):
@@ -59,12 +65,25 @@ class Dedomil(Scrap):
 		for game in games:
 			print(game.a['href'], game.a.text)
 
-	def setting(self, args):
-		key, val = args
-		if key not in self.config.keys():
+	def check_config(self, key):
+		config = self.config
+		keys = config.keys()
+		if key not in keys:
 			return print('key not found:', key)
 
-		if type(self.config[key]) == int and not val.isdigit():
+		return [config, keys]
+
+	def setting(self, args):
+		key, val = args
+		config, keys = self.check_config(key)
+
+		if type(config[key]) == int and not val.isdigit():
 			return print('value type not match')
 
-		self.config[key] = val
+		config[key] = val
+
+	def delete(self, args):
+		key, = args
+		config, keys = self.check_config(key)
+
+		config[key] = self.old_config[key]
