@@ -115,7 +115,7 @@ class Dedomil(Scrap):
 		if which == 'all':
 			print('semua')
 
-		elif which == 'res':
+		elif which == 'screen':
 			self.screens()
 
 		elif which == 'model':
