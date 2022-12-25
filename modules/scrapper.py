@@ -28,10 +28,13 @@ class Scrap:
 			self.get_last()
 
 		elif key == 'set':
-			self.setting(param)
+			self.configure(key, param)
 
 		elif key == 'del':
-			self.delete(param)
+			self.configure(key, param)
+
+		elif key == 'screen' and self.config['id']:
+			self.screens()
 
 		elif key == 'exit':
 			return
@@ -43,29 +46,34 @@ class Dedomil(Scrap):
 		self.sesi = Session()
 		self.host = 'http://dedomil.net'
 		self.config = {
-			'id': 0
+			'id': 0,
+			'res': 0
 		}
 		self.old_config = self.config.copy()
 		self.last_search = {}
 
 		super().__init__()
 
+	@staticmethod
+	def retrieve(resp):
+		web = be(resp.text, 'html.parser')
+		return web.select('div[class=GMENU]')
+
 	def search(self, args):
 		q = ' '.join(args)
 		path = self.host+'/games/search'
-		s = self.sesi.post(
+		r = self.sesi.post(
 			path,
 			data = {
 				'q': q
 			}
 		)
 
-		if s.url == path:
+		if r.url == path:
 			print('game not found')
 			return
 
-		web = be(s.text, 'html.parser')
-		games = web.select('div[class=GMENU]')
+		games = self.retrieve(r)
 		self.last_search = {}
 		for game in games:
 			game_id = search('\d+', game.a['href']).group()
@@ -80,25 +88,28 @@ class Dedomil(Scrap):
 		for x,y in self.last_search.items():
 			print(f'{x}. {y}')
 
-	def check_config(self, key):
+	def configure(self, which, args):
+		key = args[0]
 		config = self.config
 		keys = config.keys()
 		if key not in keys:
 			return print('key not found:', key)
+		
+		if which == 'set':
+			val = args[1]
+			if type(config[key]) == int and not val.isdigit():
+				return print('value type not match')
 
-		return [config, keys]
+			config[key] = val
+		
+		elif which == 'del':
+			config[key] = self.old_config[key]
 
-	def setting(self, args):
-		key, val = args
-		config, keys = self.check_config(key)
+	def screens(self):
+		r = self.sesi.get(f'{self.host}/games/{self.config["id"]}/screens')
+		if r.status_code == 404:
+			return print('game not found')
 
-		if type(config[key]) == int and not val.isdigit():
-			return print('value type not match')
-
-		config[key] = val
-
-	def delete(self, args):
-		key, = args
-		config, keys = self.check_config(key)
-
-		config[key] = self.old_config[key]
+		resols = self.retrieve(r)
+		for res in resols:
+			print(res.a.text)
