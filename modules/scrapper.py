@@ -1,6 +1,7 @@
 from requests import Session, get, post
 from bs4 import BeautifulSoup as be
 from re import search
+from .func import space
 
 version = '1.0.4'
 
@@ -83,7 +84,7 @@ class Dedomil(Scrap):
 			return print('empty')
 
 		for x,y in self.last_search.items():
-			print(f'{x}. {y}')
+			print(f'\u001b[4m{x}.{space}{y}\033[0m')
 
 	def configure(self, which, args):
 		key = args[0]
@@ -133,5 +134,4 @@ class Dedomil(Scrap):
 			return available
 
 		for x,y in available.items():
-			space = "\b"*(len(x)-1)
-			print(f'\u001b[4m{x}.  {space}{y}')
+			print(f'\u001b[4m{x}.{space(x)}{y}\033[0m')
