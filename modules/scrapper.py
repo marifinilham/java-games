@@ -1,9 +1,9 @@
 from requests import Session, get, post
 from bs4 import BeautifulSoup as be
 from re import search
-from .func import space
+from .func import space, phead
 
-version = '1.0.4'
+version = '1.2.1'
 
 class Scrap:
 	def __init__(self):
@@ -45,7 +45,7 @@ class Dedomil(Scrap):
 		self.host = 'http://dedomil.net'
 		self.config = {
 			'id': 0,
-			'res': 0
+			'screens': {}
 		}
 		self.old_config = self.config.copy()
 		self.last_search = {}
@@ -53,9 +53,15 @@ class Dedomil(Scrap):
 		super().__init__()
 
 	@staticmethod
-	def retrieve(resp):
+	def retrieve(resp, cls):
 		web = be(resp.text, 'html.parser')
-		return web.select('div[class=GMENU]')
+		return web.select(f'div[class={cls}]')
+
+	@staticmethod
+	def dump(var, name):
+		phead('id', name)
+		for x,y in var.items():
+			print(f'\u001b[4m{x}.  {space(x)}{y}\033[0m')
 
 	def search(self, args):
 		q = ' '.join(args)
@@ -71,20 +77,20 @@ class Dedomil(Scrap):
 			print('game not found')
 			return
 
-		games = self.retrieve(r)
+		games = self.retrieve(r, 'GMENU')
 		self.last_search = {}
+		phead('id', 'game')
 		for game in games:
 			game_id = search('\d+', game.a['href']).group()
 			game_name = game.a.text
 			self.last_search[game_id] = game_name
-			print(f'{game_id}. {game_name}')
+			print(f'\u001b[4m{game_id}.  {space(game_id)}{game_name}\033[0m')
 
 	def get_last(self):
 		if len(self.last_search) == 0:
 			return print('empty')
 
-		for x,y in self.last_search.items():
-			print(f'\u001b[4m{x}.{space}{y}\033[0m')
+		self.dump(self.last_search, 'game')
 
 	def configure(self, which, args):
 		key = args[0]
@@ -113,25 +119,36 @@ class Dedomil(Scrap):
 			self.screens()
 
 		elif which == 'model':
-			screen = 'all' if len(args) != 2 else args[1]
-			screens = self.screens(1)
-			
-
+			self.models()
 
 	def screens(self, ret=0):
+		if available := self.config['screens']:
+			return self.dump(available, 'resolution')
+
 		r = self.sesi.get(f'{self.host}/games/{self.config["id"]}/screens')
 		if r.status_code == 404:
 			return print('game not found')
 
-		resols = self.retrieve(r)
+		resols = self.retrieve(r, 'GMENU')
 		available = {}
 		for res in resols:
 			a = res.a
 			id_res = a['href'].split('/')[-1]
 			available[id_res] = a.text
 
+		self.config['screens'] = available.copy()
+
 		if ret:
 			return available
 
-		for x,y in available.items():
-			print(f'\u001b[4m{x}.{space(x)}{y}\033[0m')
+		self.dump(available, 'resolution')
+
+	def models(self):
+		id_game = self.config['id']
+		screens = self.screens(1)
+		if screen := self.config['screen']:
+			screens = screens[screen]
+
+		for x,y in screens:
+			r = self.sesi.get(f'{host}/games/{id_game}/screen/{x}')
+			print
