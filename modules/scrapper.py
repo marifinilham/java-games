@@ -1,5 +1,6 @@
 from requests import Session, get, post
 from bs4 import BeautifulSoup as be
+from re import search
 
 version = '1.0.4'
 
@@ -8,7 +9,6 @@ class Scrap:
 		self.cli()
 
 	def cli(self):
-		print(self.config)
 		ps1 = f'[java-games-{version}]'
 		if idgame := self.config['id']:
 			ps1 += f'[{idgame}]'
@@ -23,6 +23,9 @@ class Scrap:
 
 		if key == 'search':
 			self.search(param)
+
+		elif key == 'last':
+			self.get_last()
 
 		elif key == 'set':
 			self.setting(param)
@@ -43,6 +46,7 @@ class Dedomil(Scrap):
 			'id': 0
 		}
 		self.old_config = self.config.copy()
+		self.last_search = {}
 
 		super().__init__()
 
@@ -62,8 +66,19 @@ class Dedomil(Scrap):
 
 		web = be(s.text, 'html.parser')
 		games = web.select('div[class=GMENU]')
+		self.last_search = {}
 		for game in games:
-			print(game.a['href'], game.a.text)
+			game_id = search('\d+', game.a['href']).group()
+			game_name = game.a.text
+			self.last_search[game_id] = game_name
+			print(f'{game_id}. {game_name}')
+
+	def get_last(self):
+		if len(self.last_search) == 0:
+			return print('empty')
+
+		for x,y in self.last_search.items():
+			print(f'{x}. {y}')
 
 	def check_config(self, key):
 		config = self.config
