@@ -27,14 +27,11 @@ class Scrap:
 		elif key == 'last':
 			self.get_last()
 
-		elif key == 'set':
+		elif key in ('set', 'del'):
 			self.configure(key, param)
 
-		elif key == 'del':
-			self.configure(key, param)
-
-		elif key == 'screen' and self.config['id']:
-			self.screens()
+		elif key in ('fetch') and self.config['id']:
+			self.fetch(param)
 
 		elif key == 'exit':
 			return
@@ -105,11 +102,36 @@ class Dedomil(Scrap):
 		elif which == 'del':
 			config[key] = self.old_config[key]
 
-	def screens(self):
+	def fetch(self, args):
+		which = 'all' if len(args) == 0 else args[0]
+
+		if which == 'all':
+			print('semua')
+
+		elif which == 'res':
+			self.screens()
+
+		elif which == 'model':
+			screen = 'all' if len(args) != 2 else args[1]
+			screens = self.screens(1)
+			
+
+
+	def screens(self, ret=0):
 		r = self.sesi.get(f'{self.host}/games/{self.config["id"]}/screens')
 		if r.status_code == 404:
 			return print('game not found')
 
 		resols = self.retrieve(r)
+		available = {}
 		for res in resols:
-			print(res.a.text)
+			a = res.a
+			id_res = a['href'].split('/')[-1]
+			available[id_res] = a.text
+
+		if ret:
+			return available
+
+		for x,y in available.items():
+			space = "\b"*(len(x)-1)
+			print(f'\u001b[4m{x}.  {space}{y}')
