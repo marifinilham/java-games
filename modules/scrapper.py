@@ -10,6 +10,7 @@ class Scrap:
 		self.cli()
 
 	def cli(self):
+		print(self.config)
 		ps1 = f'[java-games-{version}]'
 		if idgame := self.config['id']:
 			ps1 += f'[{idgame}]'
@@ -111,6 +112,7 @@ class Dedomil(Scrap):
 
 	def fetch(self, args):
 		which = 'all' if len(args) == 0 else args[0]
+		arg = 'all' if len(args) != 2 else args[1]
 
 		if which == 'all':
 			print('semua')
@@ -119,11 +121,11 @@ class Dedomil(Scrap):
 			self.screens()
 
 		elif which == 'model':
-			self.models()
+			self.get_models(arg)
 
 	def screens(self, ret=0):
 		if available := self.config['screens']:
-			return self.dump(available, 'resolution')
+			return available if ret else self.dump(available, 'resolution')
 
 		r = self.sesi.get(f'{self.host}/games/{self.config["id"]}/screens')
 		if r.status_code == 404:
@@ -134,21 +136,34 @@ class Dedomil(Scrap):
 		for res in resols:
 			a = res.a
 			id_res = a['href'].split('/')[-1]
-			available[id_res] = a.text
+			available[a.text] = id_res
 
 		self.config['screens'] = available.copy()
 
 		if ret:
 			return available
 
-		self.dump(available, 'resolution')
+		self.dump({y:x for x,y in available.items()}, 'resolution')
 
-	def models(self):
+	def get_models(self, arg):
 		id_game = self.config['id']
 		screens = self.screens(1)
-		if screen := self.config['screen']:
-			screens = screens[screen]
+		if screen := screens.get(arg):
+			screens = {
+				arg: screen
+			}
+		list_models = {x: [] for x in screens}
 
-		for x,y in screens:
-			r = self.sesi.get(f'{host}/games/{id_game}/screen/{x}')
-			print
+		for x,y in screens.items():
+			r = self.sesi.get(f'{self.host}/games/{id_game}/screen/{y}')
+			models = self.retrieve(r, 'MODELS')
+			loads = self.retrieve(r, 'LOAD')
+			idx = 0
+			print(x)
+			while idx < len(models):
+				model, load = models[idx], loads[idx]
+				print(model.text.strip())
+				print(load.text.strip())
+				idx += 1
+			
+			print()
